@@ -13,7 +13,6 @@ class ConversationManager:
     def __init__(self, session_id: str):
         self.session_id = session_id
         
-        # Initialize session state
         if 'stage' not in st.session_state:
             st.session_state.stage = STAGES["GREETING"]
         if 'candidate_data' not in st.session_state:
@@ -38,16 +37,13 @@ class ConversationManager:
         
         user_input_lower = user_input.lower().strip()
         
-        # Check for exact matches
         if user_input_lower in EXIT_KEYWORDS:
             return True
         
-        # Check for partial matches
         for keyword in EXIT_KEYWORDS:
             if keyword in user_input_lower:
                 return True
         
-        # Check for data deletion request
         if "delete my data" in user_input_lower or "delete data" in user_input_lower:
             handle_data_deletion_request(self.session_id)
             return True
@@ -57,7 +53,7 @@ class ConversationManager:
     def handle_greeting_stage(self) -> str:
         """Handle the initial greeting stage"""
         greeting_message = f"""
-        👋 **Welcome to {st.session_state.get('company_name', 'TalentScout')} AI Hiring Assistant!**
+         **Welcome to {st.session_state.get('company_name', 'TalentScout')} AI Hiring Assistant!**
         
         I'm here to help assess your technical skills and match you with exciting opportunities. 
         
@@ -104,7 +100,7 @@ class ConversationManager:
     def _start_info_collection(self) -> str:
         """Start the information collection process"""
         return """
-        ✅ **Thank you for your consent!**
+         **Thank you for your consent!**
         
         Now, let's collect some basic information about you.
         
@@ -115,38 +111,34 @@ class ConversationManager:
         """Collect candidate information step by step"""
         candidate_data = st.session_state.candidate_data
         
-        # Name collection
         if 'name' not in candidate_data:
             is_valid, error_msg = validate_name(user_input)
             if not is_valid:
-                return f"❌ {error_msg}\n\n**Please provide your full name:**"
+                return f" {error_msg}\n\n**Please provide your full name:**"
             
             candidate_data['name'] = sanitize_input(user_input)
             return "**Great! Now please provide your email address:**"
         
-        # Email collection
         elif 'email' not in candidate_data:
             is_valid, error_msg = validate_email(user_input)
             if not is_valid:
-                return f"❌ {error_msg}\n\n**Please provide your email address:**"
+                return f" {error_msg}\n\n**Please provide your email address:**"
             
             candidate_data['email'] = sanitize_input(user_input)
             return "**Perfect! Now please provide your phone number:**"
         
-        # Phone collection
         elif 'phone' not in candidate_data:
             is_valid, error_msg = validate_phone(user_input)
             if not is_valid:
-                return f"❌ {error_msg}\n\n**Please provide your phone number:**"
+                return f" {error_msg}\n\n**Please provide your phone number:**"
             
             candidate_data['phone'] = sanitize_input(user_input)
             return "**Excellent! How many years of professional experience do you have? (Enter a number):**"
         
-        # Experience collection
         elif 'experience' not in candidate_data:
             is_valid, error_msg = validate_experience(user_input)
             if not is_valid:
-                return f"❌ {error_msg}\n\n**Please enter your years of professional experience (as a number):**"
+                return f" {error_msg}\n\n**Please enter your years of professional experience (as a number):**"
             
             candidate_data['experience'] = float(user_input)
             st.session_state.stage = STAGES["TECH_ASSESSMENT"]
@@ -165,20 +157,17 @@ class ConversationManager:
         if not is_valid:
             return f"❌ {error_msg}\n\n**Please list your technical skills (separated by commas):**"
         
-        # Parse and store tech stack
         tech_list = [tech.strip() for tech in re.split(r'[,;|\n]', user_input) if tech.strip()]
         st.session_state.candidate_data['tech_stack'] = tech_list
         
         candidate_experience = st.session_state.candidate_data.get('experience', 2.0)
         
-        # Generate technical questions using LLM
         questions_by_tech = generate_questions_for_tech_stack(
             tech_list, 
             candidate_experience=candidate_experience
         )
         st.session_state.technical_questions = questions_by_tech
         
-        # Log the complete candidate profile
         log_interaction(self.session_id, "candidate_profile_complete", st.session_state.candidate_data)
         
         st.session_state.stage = STAGES["TECHNICAL_QUESTIONS"]
@@ -198,11 +187,9 @@ class ConversationManager:
         if not st.session_state.technical_questions:
             return "No technical questions available. Something went wrong."
         
-        # Check if we're starting the technical questions
         if st.session_state.current_question_index == 0 and user_input.lower().strip() not in ['ready', 'start', 'begin', 'yes']:
             return "**Type 'ready' when you're prepared to start the technical questions:**"
         
-        # Get all questions in a flat list
         all_questions = []
         for tech, questions in st.session_state.technical_questions.items():
             for question in questions:
@@ -210,11 +197,9 @@ class ConversationManager:
         
         current_index = st.session_state.current_question_index
         
-        # If we have a previous answer to store and evaluate
         if current_index > 0 and user_input.strip():
             prev_tech, prev_question = all_questions[current_index - 1]
             
-            # Store the answer
             if 'answers' not in st.session_state.candidate_data:
                 st.session_state.candidate_data['answers'] = {}
             
@@ -231,20 +216,16 @@ class ConversationManager:
                     technology=prev_tech
                 )
                 
-                # Add the evaluation as a message
                 self.add_message("assistant", evaluation_response)
                 
             except Exception as e:
-                # Fallback evaluation response
                 evaluation_response = "Thank you for that detailed explanation. Your technical knowledge is evident in your response."
                 self.add_message("assistant", evaluation_response)
         
-        # Check if we've completed all questions
         if current_index >= len(all_questions):
             st.session_state.stage = STAGES["COMPLETION"]
             return self._complete_assessment()
         
-        # Ask the next question
         tech, question = all_questions[current_index]
         st.session_state.current_question_index += 1
         
@@ -262,14 +243,13 @@ class ConversationManager:
         """Complete the technical assessment"""
         candidate_data = st.session_state.candidate_data
         
-        # Log the completion
         log_interaction(self.session_id, "assessment_complete", {
             "total_questions": st.session_state.current_question_index,
             "technologies_assessed": list(st.session_state.technical_questions.keys())
         })
         
         return f"""
-        🎉 **Congratulations, {candidate_data.get('name', 'Candidate')}!**
+         **Congratulations, {candidate_data.get('name', 'Candidate')}!**
         
         You've successfully completed the TalentScout AI technical assessment!
         
