@@ -5,21 +5,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Gemini Configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = "gemini-pro"
 
-# Application Settings
 APP_TITLE = "TalentScout AI Hiring Assistant"
 COMPANY_NAME = "TalentScout"
 MAX_QUESTIONS_PER_TECH = 3
-SESSION_TIMEOUT = 3600  # 1 hour in seconds
+SESSION_TIMEOUT = 3600  
 
-# Privacy Settings
 DATA_RETENTION_DAYS = 30
 REQUIRE_CONSENT = True
 
-# Conversation Stages
 STAGES = {
     "GREETING": "greeting",
     "CONSENT": "consent", 
@@ -29,13 +25,11 @@ STAGES = {
     "COMPLETION": "completion"
 }
 
-# Exit Keywords
 EXIT_KEYWORDS = [
     "exit", "quit", "bye", "goodbye", "stop", "end", "finish", 
     "no thanks", "not interested", "cancel"
 ]
 
-# LLM Prompts
 SYSTEM_PROMPTS = {
     "TECHNICAL_QUESTION_GENERATOR": """You are an expert technical interviewer for a hiring company called TalentScout. 
     Generate {num_questions} relevant, practical technical questions for a candidate with experience in {technology}.
